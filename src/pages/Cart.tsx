@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStore, getProductUnitDetails } from '../store';
 import { Trash2, Plus, Minus, ArrowRight, CheckCircle, Plane, Ship, Search, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { usePaystackPayment } from 'react-paystack';
 
 export default function Cart() {
   const { cart, removeFromCart, updateCartQuantity, clearCart, shippingRates, fetchShippingRates } = useStore();
@@ -38,16 +37,15 @@ export default function Cart() {
 
   const filteredCountries = shippingRates.filter(r => r.country.toLowerCase().includes(countrySearch.toLowerCase()));
 
-  const paystackConfig = {
-    reference: (new Date()).getTime().toString(),
-    email: checkoutForm.email || 'customer@imaniglobal.com',
-    amount: Math.round(parseFloat(total) * 100), 
-    publicKey: (import.meta as any).env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_sample',
-  };
+  const handlePayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkoutForm.name || !checkoutForm.email) {
+      alert("Please enter both Name and Email to proceed.");
+      return;
+    }
+    
+    setIsProcessing(true);
 
-  const initializePayment = usePaystackPayment(paystackConfig as any);
-
-  const onSuccess = async (reference: any) => {
     const orderDetails = cart.map(item => {
       const unit = getProductUnitDetails(item.name);
       const unitDesc = unit.type === 'bag' ? 'bag(s)' : 'kg';
@@ -55,51 +53,39 @@ export default function Cart() {
     }).join(', ');
     const displayCountry = activeRate?.country || 'Unknown';
 
-    try {
-      await fetch("https://formsubmit.co/ajax/samuelirem6@gmail.com", {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          name: checkoutForm.name,
-          email: checkoutForm.email,
-          order_items: orderDetails,
-          total_paid: `€${total} (Ref: ${reference?.reference})`,
-          _subject: `New Paid Order from ${checkoutForm.name}`,
-          _autoresponse: `Thank you for your payment of €${total} to IMANIGLOBAL! Your order for the following items has been successfully confirmed: ${orderDetails}. We will reach out shortly regarding shipping details for ${displayCountry}.`
-        })
-      });
+    // Prepare WhatsApp URL
+    const message = `Hello IMANIGLOBAL! I would like to place an order of €${total}. My email is ${checkoutForm.email}.\n\nOrder items: ${orderDetails}.\nDestination Country: ${displayCountry}\n\nPlease help me finalize shipping and payment details.`;
+    const whatsappUrl = `https://wa.me/2349127485007?text=${encodeURIComponent(message)}`;
 
+    // 1. OPEN WHATSAPP IMMEDIATELY (Sync) to bypass browser popup blockers
+    // Using _blank opens it in a new tab securely.
+    window.open(whatsappUrl, '_blank');
+
+    // 2. SEND EMAIL NOTIFICATION IN BACKGROUND
+    fetch("https://formsubmit.co/ajax/samuelirem6@gmail.com", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        name: checkoutForm.name,
+        email: checkoutForm.email,
+        order_items: orderDetails,
+        total_paid: `€${total}`,
+        _subject: `New Order from ${checkoutForm.name}`,
+        _autoresponse: `Thank you for your order with IMANIGLOBAL! Your request for the following items has been received: ${orderDetails}. We will calculate final details and reach out shortly regarding shipping and payment for ${displayCountry}.`
+      })
+    })
+    .catch(err => {
+      console.error("Payment notification error", err);
+    })
+    .finally(() => {
+      // 3. CLEAN UP CART AFTER BACKGROUND TASKS FINISH
       clearCart();
       setIsProcessing(false);
-      
-      const message = `Hello IMANIGLOBAL! I just made a payment of €${total} for my order (Ref: ${reference?.reference}). My email is ${checkoutForm.email}.\n\nOrder items: ${orderDetails}.\nDestination Country: ${displayCountry}\n\nPlease confirm my shipping details.`;
-      window.location.href = `https://wa.me/2349127485007?text=${encodeURIComponent(message)}`;
-    } catch (err) {
-      console.error("Payment error", err);
-      // Fallback
-      clearCart();
-      setIsProcessing(false);
-      const message = `Hello IMANIGLOBAL! I just made a payment of €${total} for my order (Ref: ${reference?.reference}). My email is ${checkoutForm.email}.\n\nOrder items: ${orderDetails}.\nDestination Country: ${displayCountry}\n\nPlease confirm my shipping details.`;
-      window.location.href = `https://wa.me/2349127485007?text=${encodeURIComponent(message)}`;
-    }
-  };
-
-  const onClose = () => {
-    setIsProcessing(false);
-    console.log('Payment closed by user.');
-  };
-
-  const handlePayment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!checkoutForm.name || !checkoutForm.email) {
-      alert("Please enter both Name and Email to proceed.");
-      return;
-    }
-    setIsProcessing(true);
-    initializePayment({ onSuccess, onClose });
+      setIsCheckout(false);
+    });
   };
 
   if (cart.length === 0) {
@@ -271,7 +257,7 @@ export default function Cart() {
                     Proceed to Checkout <ArrowRight className="w-4 h-4" />
                   </button>
                   <p className="text-xs text-text-muted mt-4 text-center">
-                    You will be redirected to secure payment, and then to WhatsApp to finalize shipping details.
+                    You will be redirected to WhatsApp to finalize your order and review payment instructions.
                   </p>
                 </>
               ) : (
@@ -287,7 +273,7 @@ export default function Cart() {
                     disabled={isProcessing} 
                     className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-full font-semibold text-sm hover:bg-green-700 shadow-md transition-all duration-300 disabled:opacity-70 mt-2"
                   >
-                    {isProcessing ? 'Connecting to Paystack...' : `Pay Securely via Paystack (€${total})`}
+                    {isProcessing ? 'Processing...' : `Submit Order (€${total})`}
                   </button>
                   <button 
                     type="button" 
