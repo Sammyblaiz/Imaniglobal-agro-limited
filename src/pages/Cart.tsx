@@ -2,17 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStore, getProductUnitDetails } from '../store';
 import { Trash2, Plus, Minus, ArrowRight, CheckCircle, Plane, Ship, Search, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { usePaystackPayment } from 'react-paystack';
 
 export default function Cart() {
   const { cart, removeFromCart, updateCartQuantity, clearCart, shippingRates, fetchShippingRates } = useStore();
-  const [isCheckout, setIsCheckout] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [selectedCountryId, setSelectedCountryId] = useState<string>('');
   const [countrySearch, setCountrySearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [shippingType, setShippingType] = useState<'cargo' | 'shipping'>('cargo');
-  const [checkoutForm, setCheckoutForm] = useState({ name: '', email: '' });
 
   useEffect(() => {
     fetchShippingRates();
@@ -38,16 +34,7 @@ export default function Cart() {
 
   const filteredCountries = shippingRates.filter(r => r.country.toLowerCase().includes(countrySearch.toLowerCase()));
 
-  const paystackConfig = {
-    reference: (new Date()).getTime().toString(),
-    email: checkoutForm.email || 'customer@imaniglobal.com',
-    amount: Math.round(parseFloat(total) * 100), 
-    publicKey: (import.meta as any).env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_sample',
-  };
-
-  const initializePayment = usePaystackPayment(paystackConfig as any);
-
-  const onSuccess = async (reference: any) => {
+  const handleMakePayment = () => {
     const orderDetails = cart.map(item => {
       const unit = getProductUnitDetails(item.name);
       const unitDesc = unit.type === 'bag' ? 'bag(s)' : 'kg';
@@ -55,55 +42,16 @@ export default function Cart() {
     }).join(', ');
     const displayCountry = activeRate?.country || 'Unknown';
 
-    try {
-      await fetch("https://formsubmit.co/ajax/samuelirem6@gmail.com", {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          name: checkoutForm.name,
-          email: checkoutForm.email,
-          order_items: orderDetails,
-          total_paid: `€${total} (Ref: ${reference?.reference})`,
-          _subject: `New Paid Order from ${checkoutForm.name}`,
-          _autoresponse: `Thank you for your payment of €${total} to IMANIGLOBAL! Your order for the following items has been successfully confirmed: ${orderDetails}. We will reach out shortly regarding shipping details for ${displayCountry}.`
-        })
-      });
-
-      clearCart();
-      setIsProcessing(false);
-      
-      const message = `Hello IMANIGLOBAL! I just made a payment of €${total} for my order (Ref: ${reference?.reference}). My email is ${checkoutForm.email}.\n\nOrder items: ${orderDetails}.\nDestination Country: ${displayCountry}\n\nPlease confirm my shipping details.`;
-      const whatsappUrl = `https://wa.me/2349127485007?text=${encodeURIComponent(message)}`;
-      
-      // Navigate in current window to ensure mobile works perfectly without popup blocks
-      window.location.href = whatsappUrl;
-    } catch (err) {
-      console.error("Payment error", err);
-      // Fallback
-      clearCart();
-      setIsProcessing(false);
-      const message = `Hello IMANIGLOBAL! I just made a payment of €${total} for my order (Ref: ${reference?.reference}). My email is ${checkoutForm.email}.\n\nOrder items: ${orderDetails}.\nDestination Country: ${displayCountry}\n\nPlease confirm my shipping details.`;
-      const whatsappUrl = `https://wa.me/2349127485007?text=${encodeURIComponent(message)}`;
-      window.location.href = whatsappUrl;
-    }
-  };
-
-  const onClose = () => {
-    setIsProcessing(false);
-  };
-
-  const handlePayment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!checkoutForm.name || !checkoutForm.email) {
-      alert("Please enter both Name and Email to proceed.");
-      return;
-    }
+    const message = `Hello IMANIGLOBAL! I would like to make a payment for my order of €${total}.\n\nOrder items: ${orderDetails}.\nDestination Country: ${displayCountry}\n\nPlease provide me with the payment instructions!`;
+    const whatsappUrl = `https://wa.me/2349127485007?text=${encodeURIComponent(message)}`;
     
-    setIsProcessing(true);
-    initializePayment({ onSuccess, onClose });
+    // Ensure we trigger opening the link natively in a new tab first to bypass frame blocks
+    window.open(whatsappUrl, '_blank');
+
+    // Delay clearing the cart so the window navigation registers successfully before the UI drops out
+    setTimeout(() => {
+      clearCart();
+    }, 300);
   };
 
   if (cart.length === 0) {
@@ -174,10 +122,9 @@ export default function Cart() {
                   <span>€{subtotal.toFixed(2)}</span>
                 </div>
                 
-                {isCheckout && (
-                  <div className="space-y-3 py-4 border-y border-gray-100">
-                    <h4 className="font-bold text-black uppercase text-xs tracking-wider">Destination Country</h4>
-                    <div className="relative">
+                <div className="space-y-3 py-4 border-y border-gray-100">
+                  <h4 className="font-bold text-black uppercase text-xs tracking-wider">Destination Country</h4>
+                  <div className="relative">
                       <div 
                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded text-sm flex justify-between items-center cursor-pointer"
                         onClick={() => {
@@ -254,55 +201,26 @@ export default function Cart() {
                       <span className="font-semibold text-primary">€{activeRate ? ((activeRate.shipping / 20) * totalKg).toFixed(2) : '0.00'}</span>
                     </label>
                   </div>
-                )}
 
                 <div className="flex justify-between text-text-muted">
                   <span>Shipping</span>
-                  <span>{isCheckout ? `€${shippingCost.toFixed(2)}` : 'Calculated at checkout'}</span>
+                  <span>€{shippingCost.toFixed(2)}</span>
                 </div>
                 <div className="border-t border-gray-100 pt-4 flex justify-between font-bold text-lg text-black">
                   <span>Total</span>
-                  <span>{isCheckout ? `€${total}` : `€${subtotal.toFixed(2)}`}</span>
+                  <span>€{total}</span>
                 </div>
               </div>
               
-              {!isCheckout ? (
-                <>
-                  <button 
-                    onClick={() => setIsCheckout(true)}
-                    className="w-full flex items-center justify-center gap-2 bg-black text-white py-4 rounded-full font-semibold text-sm hover:bg-primary shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
-                  >
-                    Proceed to Checkout <ArrowRight className="w-4 h-4" />
-                  </button>
-                  <p className="text-xs text-text-muted mt-4 text-center">
-                    You will be redirected to secure payment, and then to WhatsApp to finalize shipping details.
-                  </p>
-                </>
-              ) : (
-                <form onSubmit={handlePayment} className="mt-6 space-y-4 border-t border-gray-100 pt-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <CheckCircle className="w-5 h-5 text-primary" />
-                    <h4 className="font-bold text-sm uppercase text-black">Contact Details</h4>
-                  </div>
-                  <input required type="text" placeholder="Full Name" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded focus:outline-none focus:border-primary text-sm" value={checkoutForm.name} onChange={(e) => setCheckoutForm({...checkoutForm, name: e.target.value})} />
-                  <input required type="email" placeholder="Email Address (for receipt)" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded focus:outline-none focus:border-primary text-sm" value={checkoutForm.email} onChange={(e) => setCheckoutForm({...checkoutForm, email: e.target.value})} />
-                  <button 
-                    type="submit" 
-                    disabled={isProcessing} 
-                    className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-full font-semibold text-sm hover:bg-green-700 shadow-md transition-all duration-300 disabled:opacity-70 mt-2"
-                  >
-                    {isProcessing ? 'Connecting to Paystack...' : `Pay Securely via Paystack (€${total})`}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setIsCheckout(false)} 
-                    disabled={isProcessing}
-                    className="w-full text-center text-xs font-semibold uppercase tracking-wider text-text-muted hover:text-black mt-4 py-2 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </form>
-              )}
+              <button 
+                onClick={handleMakePayment}
+                className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-full font-semibold text-sm hover:bg-green-700 shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+              >
+                Make Payment <ArrowRight className="w-4 h-4" />
+              </button>
+              <p className="text-xs text-text-muted mt-4 text-center">
+                You will be redirected straight to WhatsApp to complete payment and shipment safely.
+              </p>
             </div>
           </div>
         </div>
