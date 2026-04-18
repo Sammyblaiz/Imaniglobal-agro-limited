@@ -37,9 +37,6 @@ export default function Navbar() {
           <Link to="/contact" className="text-black text-sm font-medium uppercase tracking-wider hover:text-primary transition-colors">Contact us</Link>
         </li>
         <li>
-          <Link to="/admin" className="text-primary font-bold text-sm uppercase tracking-wider">Admin Panel</Link>
-        </li>
-        <li>
           <Link to="/cart" className="relative text-black hover:text-primary transition-colors">
             <ShoppingCart className="w-6 h-6" />
             {cartCount > 0 && (
@@ -73,7 +70,6 @@ export default function Navbar() {
           <Link to="/shop" onClick={() => setIsMobileMenuOpen(false)} className="text-black text-sm font-medium uppercase tracking-wider">Product</Link>
           <Link to="/about" onClick={() => setIsMobileMenuOpen(false)} className="text-black text-sm font-medium uppercase tracking-wider">About us</Link>
           <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="text-black text-sm font-medium uppercase tracking-wider">Contact us</Link>
-          <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="text-primary font-bold text-sm uppercase tracking-wider">Admin Panel</Link>
         </div>
       )}
     </nav>

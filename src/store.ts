@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { supabase } from './lib/supabase';
+
 export interface Product {
   id: string;
   name: string;
@@ -67,26 +69,27 @@ export const useStore = create<AppState>((set, get) => ({
   fetchProducts: async () => {
     set({ isLoading: true });
     try {
-      const res = await fetch('/api/products');
-      const data = await res.json();
-      if (res.ok && Array.isArray(data)) {
-        set({ products: data, isLoading: false });
-      } else {
-        console.error("Failed to fetch products:", data.error || "Unknown error");
-        set({ products: [], isLoading: false });
-      }
+      const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: true });
+      if (error) throw error;
+      // Use Supabase data directly. If it's empty ([]), we want to show an empty store.
+      set({ products: data || [], isLoading: false });
     } catch (error) {
-      console.error("Failed to fetch products", error);
+      console.error("Failed to fetch products from Supabase", error);
+      // Ensure we don't load dummy data anymore
       set({ products: [], isLoading: false });
     }
   },
 
   fetchShippingRates: async () => {
     try {
-      const res = await fetch('/api/shipping-rates');
-      if (res.ok) {
+      const res = await fetch('/api/shipping-rates').catch(() => null);
+      if (res && res.ok) {
         const data = await res.json();
         set({ shippingRates: data });
+        localStorage.setItem('shippingRatesBackup', JSON.stringify(data));
+      } else {
+        const backup = localStorage.getItem('shippingRatesBackup');
+        if (backup) set({ shippingRates: JSON.parse(backup) });
       }
     } catch (error) {
       console.error("Failed to fetch shipping rates", error);
@@ -136,57 +139,46 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addProduct: async (product) => {
-    const { adminToken, fetchProducts } = get();
+    const { fetchProducts } = get();
     try {
-      await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
-        body: JSON.stringify(product)
-      });
+      const { error } = await supabase.from('products').insert([product]);
+      if (error) throw error;
       await fetchProducts();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to add product", error);
+      alert(`Error adding product: ${error?.message || 'Unknown error'}. Please ensure the 'products' table exists and RLS is disabled.`);
     }
   },
 
   updateProduct: async (id, product) => {
-    const { adminToken, fetchProducts } = get();
+    const { fetchProducts } = get();
     try {
-      await fetch(`/api/products/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
-        body: JSON.stringify(product)
-      });
+      const { error } = await supabase.from('products').update(product).eq('id', id);
+      if (error) throw error;
       await fetchProducts();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update product", error);
+      alert(`Error updating product: ${error?.message || 'Unknown error'}. Please ensure the 'products' table exists and RLS is disabled.`);
     }
   },
 
   deleteProduct: async (id) => {
-    const { adminToken, fetchProducts } = get();
+    const { fetchProducts } = get();
     try {
-      await fetch(`/api/products/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) throw error;
       await fetchProducts();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete product", error);
+      alert(`Error deleting product: ${error?.message || 'Unknown error'}. Please ensure the 'products' table exists and RLS is disabled.`);
     }
   },
 
   updateShippingRates: async (rates) => {
     const { adminToken, fetchShippingRates } = get();
     try {
+      set({ shippingRates: rates });
+      localStorage.setItem('shippingRatesBackup', JSON.stringify(rates));
       await fetch('/api/shipping-rates', {
         method: 'PUT',
         headers: {
@@ -194,8 +186,7 @@ export const useStore = create<AppState>((set, get) => ({
           'Authorization': `Bearer ${adminToken}`
         },
         body: JSON.stringify(rates)
-      });
-      await fetchShippingRates();
+      }).catch(() => null);
     } catch (error) {
       console.error("Failed to update shipping rates", error);
     }

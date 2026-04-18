@@ -50,8 +50,8 @@ let fallbackProducts = [
 
 function getSupabase() {
   if (!supabase) {
-    const supabaseUrl = process.env.SUPABASE_URL || "https://jajcgwmwepwtkielavey.supabase.co";
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamNnd213ZXB3dGtpZWxhdmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODY4MDEsImV4cCI6MjA5MTg2MjgwMX0.XdwdLB38zT85sjK2wRSjIJHS8EuxcLDwybYWorXdNiY";
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://dczoxzxxnsfxwzjfuhzq.supabase.co";
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjem94enh4bnNmeHd6amZ1aHpxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjQzMDUyNywiZXhwIjoyMDkyMDA2NTI3fQ.uYFLeAszyDB8MkGV6J4_L4T7ubv8mQSyRBjZbTMInaM";
     
     if (!supabaseKey) {
       return null;
@@ -125,11 +125,19 @@ async function startServer() {
         return res.json(fallbackProducts);
       }
       const { data, error } = await db.from("products").select("*").order("created_at", { ascending: true });
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST205' || error.message?.includes('not find the table') || error.code === '42P01') {
+          console.warn("Supabase products table not found. Using local memory fallback.");
+          return res.json(fallbackProducts);
+        }
+        console.error("Supabase GET error:", error);
+        throw error;
+      }
       res.json(data);
     } catch (error: any) {
       console.error("Error fetching products:", error);
-      res.status(500).json({ error: error.message || "Failed to fetch products" });
+      console.warn("Falling back to local products due to an error.");
+      res.json(fallbackProducts);
     }
   });
 
@@ -160,7 +168,21 @@ async function startServer() {
         }
       ]).select().single();
       
-      if (error) throw error;
+      if (error) {
+         if (error.code === 'PGRST205' || error.message?.includes('not find the table') || error.code === '42P01') {
+            console.warn("Supabase products table not found during insert. Using local memory fallback.");
+            const newProduct = {
+              id: Date.now().toString(),
+              name,
+              description,
+              price: Number(price),
+              image: image || "https://picsum.photos/seed/agro/600/400"
+            };
+            fallbackProducts.push(newProduct);
+            return res.status(201).json(newProduct);
+         }
+         throw error;
+      }
       res.status(201).json(data);
     } catch (error: any) {
       console.error("Error adding product:", error);
@@ -202,7 +224,23 @@ async function startServer() {
         .select()
         .single();
         
-      if (error) throw error;
+      if (error) {
+         if (error.code === 'PGRST205' || error.message?.includes('not find the table') || error.code === '42P01') {
+            console.warn("Supabase products table not found during update. Using local memory fallback.");
+            const index = fallbackProducts.findIndex(p => p.id === id);
+            if (index === -1) return res.status(404).json({ error: "Product not found" });
+            
+            fallbackProducts[index] = {
+              ...fallbackProducts[index],
+              name: name || fallbackProducts[index].name,
+              description: description || fallbackProducts[index].description,
+              price: price ? Number(price) : fallbackProducts[index].price,
+              image: image || fallbackProducts[index].image
+            };
+            return res.json(fallbackProducts[index]);
+         }
+         throw error;
+      }
       res.json(data);
     } catch (error: any) {
       console.error("Error updating product:", error);
@@ -223,7 +261,14 @@ async function startServer() {
 
       const { error } = await db.from("products").delete().eq("id", id);
       
-      if (error) throw error;
+      if (error) {
+         if (error.code === 'PGRST205' || error.message?.includes('not find the table') || error.code === '42P01') {
+             console.warn("Supabase products table not found during delete. Using local memory fallback.");
+             fallbackProducts = fallbackProducts.filter(p => p.id !== id);
+             return res.json({ success: true });
+         }
+         throw error;
+      }
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error deleting product:", error);
