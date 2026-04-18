@@ -16,3 +16,13 @@ body {
   background-color: var(--color-bg);
   color: var(--color-black);
 }
+
+/* Remove default spin buttons from number inputs for a cleaner UI and prevent number cutoff */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}

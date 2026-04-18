@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 
 export default function Home() {
   const { products, fetchProducts, addToCart } = useStore();
-  const [kgSelection, setKgSelection] = useState<Record<string, number>>({});
+  const [kgSelection, setKgSelection] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchProducts();
@@ -15,19 +15,26 @@ export default function Home() {
   const featuredProducts = products.slice(0, 5);
 
   const handleKgChange = (id: string, value: string) => {
-    const val = parseInt(value, 10);
+    const cleanValue = value.replace(/^0+/, '');
     setKgSelection({
       ...kgSelection,
-      [id]: isNaN(val) || val < 1 ? 1 : val
+      [id]: cleanValue
     });
   };
 
-  const getKg = (id: string) => kgSelection[id] || 1;
+  const getKg = (id: string) => {
+    const val = parseInt(kgSelection[id], 10);
+    return isNaN(val) ? 0 : val;
+  };
 
   const handleAddToCart = (product: any, e: React.MouseEvent) => {
     e.preventDefault();
-    const unit = getProductUnitDetails(product.name);
     const qty = getKg(product.id);
+    if (qty <= 0) {
+      alert('Please select a quantity greater than 0 before adding to cart.');
+      return;
+    }
+    const unit = getProductUnitDetails(product.name);
     addToCart(product, qty);
     alert(`Added ${qty} ${unit.type === 'bag' ? 'bag(s)' : 'kg'} of ${product.name} to cart`);
   };
@@ -86,9 +93,10 @@ export default function Home() {
                     <input 
                       type="number"
                       min="1"
-                      value={getKg(product.id)}
+                      value={kgSelection[product.id] !== undefined ? kgSelection[product.id] : ''}
+                      placeholder="0"
                       onChange={(e) => handleKgChange(product.id, e.target.value)}
-                      className="w-12 h-6 text-center bg-gray-100 rounded focus:outline-none text-xs font-semibold mr-2"
+                      className="w-16 h-8 text-center bg-gray-100 rounded focus:outline-none text-xs font-semibold mr-2"
                       onClick={e => e.stopPropagation()}
                     />
                     <button 
