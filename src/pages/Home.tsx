@@ -35,35 +35,32 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <main className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] flex-1 min-h-[600px]">
-        <section className="p-8 md:p-16 flex flex-col justify-center">
-          <span className="font-sans text-primary uppercase font-bold text-xs tracking-[0.15em] mb-6 block">
+      <main className="relative flex-1 min-h-[600px] md:min-h-[750px] flex items-center justify-center bg-cover bg-center" style={{
+          backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.65)), url('https://i.ibb.co/R4Ms1c0h/Agriculture-Insert.jpg')"
+        }}>
+        <section className="p-8 md:p-16 flex flex-col justify-center items-center text-center relative z-10 w-full max-w-4xl">
+          <span className="font-sans text-primary uppercase font-bold text-xs md:text-sm tracking-[0.2em] mb-6 block drop-shadow-md">
             Global Export Excellence
           </span>
-          <h1 className="font-display text-5xl md:text-6xl leading-[1.1] font-bold mb-6 tracking-tight text-black">
+          <h1 className="font-display text-5xl md:text-7xl leading-[1.1] font-bold mb-6 tracking-tight text-white drop-shadow-lg">
             Premium Agricultural Commodities You Can Trust
           </h1>
           <motion.p 
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="text-lg text-text-muted mb-10 max-w-md"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="text-lg md:text-xl text-gray-200 mb-10 max-w-2xl drop-shadow-sm font-medium"
           >
             We supply high-quality charcoal, cashew nuts, shea butter, cola nuts, and hibiscus flower to businesses and bulk buyers worldwide.
           </motion.p>
-          <div className="flex flex-wrap gap-4">
-            <Link to="/shop" className="px-8 py-4 bg-primary text-white font-semibold text-sm rounded-full shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 uppercase">
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Link to="/shop" className="px-8 py-4 bg-primary text-white font-semibold text-sm rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase">
               SHOP NOW
             </Link>
-            <a href="https://wa.me/2349127485007" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-black text-white font-semibold text-sm rounded-full shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 uppercase">
+            <a href="https://wa.me/2349127485007" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-white text-black font-semibold text-sm rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase">
               BULK INQUIRY
             </a>
           </div>
-        </section>
-        
-        <section className="relative bg-gray-200 bg-cover bg-center min-h-[400px] lg:min-h-full" style={{
-          backgroundImage: "linear-gradient(rgba(11, 143, 60, 0.1), rgba(11, 143, 60, 0.1)), url('https://i.ibb.co/R4Ms1c0h/Agriculture-Insert.jpg')"
-        }}>
         </section>
       </main>
 
