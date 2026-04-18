@@ -63,21 +63,12 @@ export default function Admin() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        loginAdmin(data.token);
-        setLoginError('');
-      } else {
-        setLoginError(data.error || 'Login failed');
-      }
-    } catch (err) {
-      setLoginError('Network error');
+    if (email === "admin@imaniglobal.com" && password === "sammy1122") {
+      const fakeToken = btoa(email + Date.now().toString());
+      loginAdmin(fakeToken);
+      setLoginError('');
+    } else {
+      setLoginError('Invalid credentials');
     }
   };
 
