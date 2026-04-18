@@ -64,11 +64,6 @@ export default function Home() {
         <section className="relative bg-gray-200 bg-cover bg-center min-h-[400px] lg:min-h-full" style={{
           backgroundImage: "linear-gradient(rgba(11, 143, 60, 0.1), rgba(11, 143, 60, 0.1)), url('https://i.ibb.co/R4Ms1c0h/Agriculture-Insert.jpg')"
         }}>
-          {/* Decorative Admin Badge from design */}
-          <div className="absolute top-6 right-6 bg-black/80 text-white py-2 px-4 rounded-full text-xs font-semibold uppercase tracking-widest flex items-center gap-2">
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-            Live Admin Dashboard
-          </div>
         </section>
       </main>
 
