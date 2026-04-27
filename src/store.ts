@@ -40,10 +40,14 @@ interface AppState {
   adminToken: string | null;
   isLoading: boolean;
   shippingRates: CountryRate[];
+  selectedCountryId: string | null;
+  shippingType: 'cargo' | 'shipping';
   
   // Actions
   fetchProducts: () => Promise<void>;
   fetchShippingRates: () => Promise<void>;
+  setCheckoutCountry: (id: string) => void;
+  setShippingType: (type: 'cargo' | 'shipping') => void;
   addToCart: (product: Product, quantityKg?: number) => void;
   removeFromCart: (productId: string) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
@@ -74,17 +78,25 @@ export const useStore = create<AppState>((set, get) => ({
   adminToken: localStorage.getItem('adminToken'),
   isLoading: false,
   shippingRates: [],
+  selectedCountryId: null,
+  shippingType: 'cargo',
+
+  setCheckoutCountry: (id) => set({ selectedCountryId: id }),
+  setShippingType: (type) => set({ shippingType: type }),
 
   fetchProducts: async () => {
     set({ isLoading: true });
     try {
-      const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: true });
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: true });
+        
       if (error) throw error;
-      // Use Supabase data directly. If it's empty ([]), we want to show an empty store.
+      
       set({ products: data || [], isLoading: false });
     } catch (error) {
       console.error("Failed to fetch products from Supabase", error);
-      // Ensure we don't load dummy data anymore
       set({ products: [], isLoading: false });
     }
   },

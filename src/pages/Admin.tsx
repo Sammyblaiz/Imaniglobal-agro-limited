@@ -199,7 +199,7 @@ export default function Admin() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-black mb-2">Price (€)</label>
+                  <label className="block text-sm font-semibold text-black mb-2">Price ($)</label>
                   <input 
                     type="number" 
                     required
@@ -300,7 +300,7 @@ export default function Admin() {
                           <span className="font-bold text-sm text-black">{product.name}</span>
                         </div>
                       </td>
-                      <td className="p-4 font-semibold text-primary">€{product.price.toFixed(2)}</td>
+                      <td className="p-4 font-semibold text-primary">${product.price.toFixed(2)}</td>
                       <td className="p-4 text-sm text-text-muted max-w-xs truncate">{product.description}</td>
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-2">
@@ -350,8 +350,8 @@ export default function Admin() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-muted">Country</th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-muted">Cargo Rate (€)</th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-muted">Standard Shipping (€)</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-muted">Cargo Rate ($)</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-muted">Standard Shipping ($)</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-muted text-right">Action</th>
                   </tr>
                 </thead>
@@ -359,8 +359,8 @@ export default function Admin() {
                   {editingRates.map(rate => (
                     <tr key={rate.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="p-4 font-bold text-sm text-black">{rate.country}</td>
-                      <td className="p-4 font-semibold text-primary">€{rate.cargo.toFixed(2)}</td>
-                      <td className="p-4 font-semibold text-primary">€{rate.shipping.toFixed(2)}</td>
+                      <td className="p-4 font-semibold text-primary">${rate.cargo.toFixed(2)}</td>
+                      <td className="p-4 font-semibold text-primary">${rate.shipping.toFixed(2)}</td>
                       <td className="p-4 text-right">
                         <button 
                           onClick={() => handleRemoveCountryRate(rate.id)}
@@ -397,7 +397,7 @@ export default function Admin() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-black mb-1">Cargo (€)</label>
+                  <label className="block text-xs font-semibold text-black mb-1">Cargo ($)</label>
                   <input 
                     type="number" 
                     min="0"
@@ -408,7 +408,7 @@ export default function Admin() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-black mb-1">Shipping (€)</label>
+                  <label className="block text-xs font-semibold text-black mb-1">Shipping ($)</label>
                   <input 
                     type="number" 
                     min="0"

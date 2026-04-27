@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore, getProductUnitDetails } from '../store';
-import { Trash2, Plus, Minus, ArrowRight, CheckCircle, Plane, Ship, Search, ChevronDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Trash2, Plus, Minus, ArrowRight, Plane, Ship, Search, ChevronDown } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Cart() {
-  const { cart, removeFromCart, updateCartQuantity, clearCart, shippingRates, fetchShippingRates } = useStore();
-  const [selectedCountryId, setSelectedCountryId] = useState<string>('');
+  const navigate = useNavigate();
+  const { cart, removeFromCart, updateCartQuantity, shippingRates, fetchShippingRates, selectedCountryId, setCheckoutCountry, shippingType, setShippingType } = useStore();
   const [countrySearch, setCountrySearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [shippingType, setShippingType] = useState<'cargo' | 'shipping'>('cargo');
 
   useEffect(() => {
     fetchShippingRates();
@@ -16,9 +15,9 @@ export default function Cart() {
 
   useEffect(() => {
     if (shippingRates.length > 0 && !selectedCountryId) {
-      setSelectedCountryId(shippingRates[0].id);
+      setCheckoutCountry(shippingRates[0].id);
     }
-  }, [shippingRates, selectedCountryId]);
+  }, [shippingRates, selectedCountryId, setCheckoutCountry]);
 
   const activeRate = shippingRates.find(r => r.id === selectedCountryId) || shippingRates[0];
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -34,24 +33,8 @@ export default function Cart() {
 
   const filteredCountries = shippingRates.filter(r => r.country.toLowerCase().includes(countrySearch.toLowerCase()));
 
-  const handleMakePayment = () => {
-    const orderDetails = cart.map(item => {
-      const unit = getProductUnitDetails(item.name);
-      const unitDesc = unit.type === 'bag' ? 'bag(s)' : 'kg';
-      return `${item.quantity} ${unitDesc} of ${item.name}`;
-    }).join(', ');
-    const displayCountry = activeRate?.country || 'Unknown';
-
-    const message = `Hello IMANIGLOBAL! I would like to make a payment for my order of €${total}.\n\nOrder items: ${orderDetails}.\nDestination Country: ${displayCountry}\n\nPlease provide me with the payment instructions!`;
-    const whatsappUrl = `https://wa.me/2349127485007?text=${encodeURIComponent(message)}`;
-    
-    // Ensure we trigger opening the link natively in a new tab first to bypass frame blocks
-    window.open(whatsappUrl, '_blank');
-
-    // Delay clearing the cart so the window navigation registers successfully before the UI drops out
-    setTimeout(() => {
-      clearCart();
-    }, 300);
+  const handleCheckout = () => {
+    navigate('/checkout');
   };
 
   if (cart.length === 0) {
@@ -81,7 +64,7 @@ export default function Cart() {
                 />
                 <div className="flex-1 text-center sm:text-left">
                   <h3 className="font-bold text-black uppercase text-sm mb-1">{item.name}</h3>
-                  <p className="text-primary font-semibold">€{item.price.toFixed(2)}</p>
+                  <p className="text-primary font-semibold">${item.price.toFixed(2)}</p>
                 </div>
                 
                 <div className="flex items-center gap-4">
@@ -119,7 +102,7 @@ export default function Cart() {
               <div className="space-y-4 mb-6 text-sm">
                 <div className="flex justify-between text-text-muted">
                   <span>Subtotal</span>
-                  <span>€{subtotal.toFixed(2)}</span>
+                  <span>${subtotal.toFixed(2)}</span>
                 </div>
                 
                 <div className="space-y-3 py-4 border-y border-gray-100">
@@ -156,7 +139,7 @@ export default function Cart() {
                                   key={rate.id}
                                   className={`px-4 py-2 text-sm cursor-pointer hover:bg-gray-50 ${selectedCountryId === rate.id ? 'bg-black text-white hover:bg-black/90' : 'text-gray-800'}`}
                                   onClick={() => {
-                                    setSelectedCountryId(rate.id);
+                                    setCheckoutCountry(rate.id);
                                     setIsDropdownOpen(false);
                                     setCountrySearch('');
                                   }}
@@ -185,7 +168,7 @@ export default function Cart() {
                           <p className="text-xs text-text-muted mt-1 ml-6">Takes up to 5 working days</p>
                         </div>
                       </div>
-                      <span className="font-semibold text-primary">€{activeRate ? ((activeRate.cargo / 20) * totalKg).toFixed(2) : '0.00'}</span>
+                      <span className="font-semibold text-primary">${activeRate ? ((activeRate.cargo / 20) * totalKg).toFixed(2) : '0.00'}</span>
                     </label>
                     <label className="flex items-center justify-between cursor-pointer group mt-2">
                       <div className="flex items-center gap-3">
@@ -198,28 +181,28 @@ export default function Cart() {
                           <p className="text-xs text-text-muted mt-1 ml-6">Takes up to 21 working days</p>
                         </div>
                       </div>
-                      <span className="font-semibold text-primary">€{activeRate ? ((activeRate.shipping / 20) * totalKg).toFixed(2) : '0.00'}</span>
+                      <span className="font-semibold text-primary">${activeRate ? ((activeRate.shipping / 20) * totalKg).toFixed(2) : '0.00'}</span>
                     </label>
                   </div>
 
                 <div className="flex justify-between text-text-muted">
                   <span>Shipping</span>
-                  <span>€{shippingCost.toFixed(2)}</span>
+                  <span>${shippingCost.toFixed(2)}</span>
                 </div>
                 <div className="border-t border-gray-100 pt-4 flex justify-between font-bold text-lg text-black">
                   <span>Total</span>
-                  <span>€{total}</span>
+                  <span>${total}</span>
                 </div>
               </div>
               
               <button 
-                onClick={handleMakePayment}
+                onClick={handleCheckout}
                 className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-full font-semibold text-sm hover:bg-green-700 shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
               >
-                Make Payment <ArrowRight className="w-4 h-4" />
+                Proceed to Checkout <ArrowRight className="w-4 h-4" />
               </button>
               <p className="text-xs text-text-muted mt-4 text-center">
-                You will be redirected straight to WhatsApp to complete payment and shipment safely.
+                Secure checkout. You'll confirm shipping and billing details on the next page.
               </p>
             </div>
           </div>

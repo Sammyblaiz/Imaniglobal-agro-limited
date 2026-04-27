@@ -29,6 +29,7 @@ export default function Home() {
 
   const handleAddToCart = (product: any, e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const qty = getKg(product.id);
     if (qty <= 0) {
       alert('Please select a quantity greater than 0 before adding to cart.');
@@ -64,7 +65,7 @@ export default function Home() {
             <Link to="/shop" className="px-8 py-4 bg-primary text-white font-semibold text-sm rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase">
               SHOP NOW
             </Link>
-            <a href="https://wa.me/2349127485007" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-white text-black font-semibold text-sm rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase">
+            <a href="https://wa.me/447379352882" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-white text-black font-semibold text-sm rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase">
               BULK INQUIRY
             </a>
           </div>
@@ -80,7 +81,7 @@ export default function Home() {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {featuredProducts.map(product => (
-            <div key={product.id} className="text-left group p-4 rounded-2xl hover:bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-transparent hover:border-gray-100">
+            <Link to={`/product/${product.id}`} key={product.id} className="text-left group p-4 rounded-2xl hover:bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-transparent hover:border-gray-100 block">
               <div 
                 className="w-full aspect-square bg-gray-100 mb-3 rounded-xl bg-cover bg-center relative overflow-hidden"
                 style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.05), rgba(0,0,0,0.05)), url('${product.image}')` }}
@@ -111,7 +112,7 @@ export default function Home() {
               <div className="text-sm font-bold uppercase mb-1 text-black truncate">{product.name}</div>
               <div className="text-xs text-text-muted italic mb-2 line-clamp-2">{product.description}</div>
               <div className="text-sm font-semibold text-primary">
-                €{product.price.toFixed(2)} 
+                ${product.price.toFixed(2)} 
                 <span className="text-xs text-text-muted font-normal">
                   {(() => {
                     const unit = getProductUnitDetails(product.name);
@@ -119,7 +120,7 @@ export default function Home() {
                   })()}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

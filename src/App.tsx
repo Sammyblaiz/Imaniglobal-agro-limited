@@ -9,6 +9,12 @@ import Cart from './pages/Cart';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
+import ProductPage from './pages/ProductPage';
+import Checkout from './pages/Checkout';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsConditions from './pages/TermsConditions';
+import RefundPolicy from './pages/RefundPolicy';
+import ShippingPolicy from './pages/ShippingPolicy';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -36,9 +42,15 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/shop" element={<Shop />} />
+                  <Route path="/product/:id" element={<ProductPage />} />
                   <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="/terms-conditions" element={<TermsConditions />} />
+                  <Route path="/refund-policy" element={<RefundPolicy />} />
+                  <Route path="/shipping-policy" element={<ShippingPolicy />} />
                 </Routes>
               </main>
               <Footer />
@@ -48,7 +60,7 @@ export default function App() {
         
         {/* Global Floating WhatsApp Button */}
         <a 
-          href="https://wa.me/2349127485007" 
+          href="https://wa.me/447379352882" 
           target="_blank" 
           rel="noopener noreferrer"
           className="fixed bottom-8 right-8 w-14 h-14 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-50"

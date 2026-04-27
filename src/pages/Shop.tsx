@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useStore, getProductUnitDetails } from '../store';
 import { ShoppingCart } from 'lucide-react';
 
+import { Link } from 'react-router-dom';
+
 export default function Shop() {
   const { products, fetchProducts, addToCart } = useStore();
   const [kgSelection, setKgSelection] = useState<Record<string, string>>({});
@@ -25,6 +27,7 @@ export default function Shop() {
 
   const handleAddToCart = (product: any, e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const qty = getKg(product.id);
     if (qty <= 0) {
       alert('Please select a quantity greater than 0 before adding to cart.');
@@ -47,7 +50,7 @@ export default function Shop() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {products.map(product => (
-            <div key={product.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+            <Link to={`/product/${product.id}`} key={product.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 block">
               <div 
                 className="w-full aspect-square bg-gray-100 bg-cover bg-center relative"
                 style={{ backgroundImage: `url('${product.image}')` }}
@@ -80,7 +83,7 @@ export default function Shop() {
                 <p className="text-xs text-text-muted italic mb-4 flex-1">{product.description}</p>
                 <div className="flex justify-between items-center mt-auto">
                   <span className="text-lg font-bold text-primary">
-                    €{product.price.toFixed(2)} 
+                    ${product.price.toFixed(2)} 
                     <span className="text-xs text-text-muted font-normal">
                       {(() => {
                         const unit = getProductUnitDetails(product.name);
@@ -94,6 +97,7 @@ export default function Shop() {
                       min="1"
                       value={getKg(product.id)}
                       onChange={(e) => handleKgChange(product.id, e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
                       className="w-12 h-8 text-center bg-gray-50 border border-gray-200 rounded focus:outline-none text-sm font-semibold"
                     />
                     <button 
@@ -106,7 +110,7 @@ export default function Shop() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
