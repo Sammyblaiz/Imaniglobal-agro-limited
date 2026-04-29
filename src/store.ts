@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 import { supabase } from './lib/supabase';
 
@@ -23,14 +24,11 @@ export interface CountryRate {
 
 export function getProductUnitDetails(name: string) {
   const lower = name.toLowerCase();
-  if (lower.includes('charcoal')) return { type: 'bag', kg: 20 };
-  if (lower.includes('hibiscus')) return { type: 'bag', kg: 10 };
-  if (lower.includes('cashew')) return { type: 'bag', kg: 20 };
-  if (lower.includes('cola')) return { type: 'bag', kg: 20 };
+  // Ensure all products except Shea butter are 10kg per bag
   if (lower.includes('shea')) return { type: 'kg', kg: 1 };
   
-  // Default fallback if a brand new category is created
-  return { type: 'kg', kg: 1 }; 
+  // Default fallback for everything else
+  return { type: 'bag', kg: 10 }; 
 }
 
 interface AppState {
@@ -71,35 +69,40 @@ const defaultShippingRates = defaultCountryNames.map((country, idx) => ({
   shipping: 50
 }));
 
-export const useStore = create<AppState>((set, get) => ({
-  products: [],
-  cart: [],
-  isAdmin: !!localStorage.getItem('adminToken'),
-  adminToken: localStorage.getItem('adminToken'),
-  isLoading: false,
-  shippingRates: [],
-  selectedCountryId: null,
-  shippingType: 'cargo',
+export const useStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      products: [],
+      cart: [],
+      isAdmin: !!localStorage.getItem('adminToken'),
+      adminToken: localStorage.getItem('adminToken'),
+      isLoading: false,
+      shippingRates: [],
+      selectedCountryId: null,
+      shippingType: 'cargo',
 
-  setCheckoutCountry: (id) => set({ selectedCountryId: id }),
-  setShippingType: (type) => set({ shippingType: type }),
+      setCheckoutCountry: (id) => set({ selectedCountryId: id }),
+      setShippingType: (type) => set({ shippingType: type }),
 
-  fetchProducts: async () => {
-    set({ isLoading: true });
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: true });
-        
-      if (error) throw error;
-      
-      set({ products: data || [], isLoading: false });
-    } catch (error) {
-      console.error("Failed to fetch products from Supabase", error);
-      set({ products: [], isLoading: false });
-    }
-  },
+      fetchProducts: async () => {
+        set({ isLoading: true });
+
+        try {
+          const { data, error } = await supabase.from('products').select('*');
+          if (error) {
+            console.error("Supabase fetch error:", error);
+            throw error;
+          }
+          if (data) {
+            set({ products: data, isLoading: false });
+          } else {
+            set({ products: [], isLoading: false });
+          }
+        } catch (error) {
+          console.error("Failed to fetch products", error);
+          set({ products: [], isLoading: false });
+        }
+      },
 
   fetchShippingRates: async () => {
     const backup = localStorage.getItem('shippingRatesBackup');
@@ -156,36 +159,70 @@ export const useStore = create<AppState>((set, get) => ({
   addProduct: async (product) => {
     const { fetchProducts } = get();
     try {
-      const { error } = await supabase.from('products').insert([product]);
-      if (error) throw error;
+      const newProduct = { ...product, id: crypto.randomUUID() };
+      
+      try {
+        const { error } = await supabase.from('products').insert([newProduct]);
+        if (error) {
+          console.error("Supabase insert error:", error);
+        }
+      } catch (err) {
+        // Ignore supabase insert failure
+      }
+
+      const cached = JSON.parse(localStorage.getItem('imaniglobal_products') || '[]');
+      const newProductNoImage = { ...newProduct };
+      delete newProductNoImage.image;
+      localStorage.setItem('imaniglobal_products', JSON.stringify([...cached, newProductNoImage]));
       await fetchProducts();
     } catch (error: any) {
-      console.error("Failed to add product", error);
-      alert(`Error adding product: ${error?.message || 'Unknown error'}. Please ensure the 'products' table exists and RLS is disabled.`);
+      console.error("Failed to add product to local storage, possible quota exceeded", error);
+      alert("Error adding product. Image size might be too large.");
     }
   },
 
   updateProduct: async (id, product) => {
     const { fetchProducts } = get();
     try {
-      const { error } = await supabase.from('products').update(product).eq('id', id);
-      if (error) throw error;
+      try {
+        const { error } = await supabase.from('products').update(product).eq('id', id);
+        if (error) {
+          console.error("Supabase update error:", error);
+        }
+      } catch (err) {
+        // Ignore supabase update failure
+      }
+
+      const cached = JSON.parse(localStorage.getItem('imaniglobal_products') || '[]');
+      const productNoImage = { ...product };
+      delete productNoImage.image;
+      const updated = cached.map((p: any) => p.id === id ? { ...p, ...productNoImage } : p);
+      localStorage.setItem('imaniglobal_products', JSON.stringify(updated));
       await fetchProducts();
     } catch (error: any) {
-      console.error("Failed to update product", error);
-      alert(`Error updating product: ${error?.message || 'Unknown error'}. Please ensure the 'products' table exists and RLS is disabled.`);
+      console.error("Failed to update product in local storage, possible quota exceeded", error);
+      alert("Error updating product. Image size might be too large.");
     }
   },
 
   deleteProduct: async (id) => {
     const { fetchProducts } = get();
     try {
-      const { error } = await supabase.from('products').delete().eq('id', id);
-      if (error) throw error;
+      try {
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) {
+          console.error("Supabase delete error:", error);
+        }
+      } catch (err) {
+        // Ignore supabase delete failure
+      }
+
+      const cached = JSON.parse(localStorage.getItem('imaniglobal_products') || '[]');
+      const filtered = cached.filter((p: any) => p.id !== id);
+      localStorage.setItem('imaniglobal_products', JSON.stringify(filtered));
       await fetchProducts();
     } catch (error: any) {
-      console.error("Failed to delete product", error);
-      alert(`Error deleting product: ${error?.message || 'Unknown error'}. Please ensure the 'products' table exists and RLS is disabled.`);
+      console.error("Failed to delete product from local storage", error);
     }
   },
 
@@ -193,4 +230,18 @@ export const useStore = create<AppState>((set, get) => ({
     set({ shippingRates: rates });
     localStorage.setItem('shippingRatesBackup', JSON.stringify(rates));
   }
-}));
+}),
+{
+  name: 'imaniglobal-storage-v2',
+  partialize: (state) => ({ 
+    cart: state.cart.map(item => {
+      const copy = { ...item };
+      delete copy.image;
+      delete copy.description;
+      return copy;
+    }), 
+    selectedCountryId: state.selectedCountryId, 
+    shippingType: state.shippingType 
+  })
+}
+));

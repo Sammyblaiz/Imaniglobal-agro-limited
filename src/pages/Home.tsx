@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useStore, getProductUnitDetails } from '../store';
 import { ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 export default function Home() {
   const { products, fetchProducts, addToCart } = useStore();
   const [kgSelection, setKgSelection] = useState<Record<string, string>>({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
@@ -81,7 +82,16 @@ export default function Home() {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {featuredProducts.map(product => (
-            <Link to={`/product/${product.id}`} key={product.id} className="text-left group p-4 rounded-2xl hover:bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-transparent hover:border-gray-100 block">
+            <div 
+              key={product.id} 
+              onClick={(e) => {
+                if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).closest('button')) {
+                  return;
+                }
+                navigate(`/product/${product.id}`);
+              }}
+              className="text-left group p-4 rounded-2xl hover:bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-transparent hover:border-gray-100 block cursor-pointer"
+            >
               <div 
                 className="w-full aspect-square bg-gray-100 mb-3 rounded-xl bg-cover bg-center relative overflow-hidden"
                 style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.05), rgba(0,0,0,0.05)), url('${product.image}')` }}
@@ -120,7 +130,7 @@ export default function Home() {
                   })()}
                 </span>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </section>

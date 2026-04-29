@@ -94,6 +94,56 @@ async function startServer() {
 
   // --- API ROUTES ---
 
+  // Orders
+  let fallbackOrders: any[] = [];
+  
+  app.post("/api/orders", async (req, res) => {
+    try {
+      const db = getSupabase();
+      const orderData = { ...req.body, created_at: new Date().toISOString() };
+      
+      if (!db) {
+        orderData.id = Date.now().toString();
+        fallbackOrders.push(orderData);
+        return res.status(201).json(orderData);
+      }
+
+      const { data, error } = await (db as any).from("orders").insert([orderData]).select().single();
+      if (error) {
+         if (error.code === 'PGRST205' || error.message?.includes('not find the table') || error.code === '42P01') {
+            orderData.id = Date.now().toString();
+            fallbackOrders.push(orderData);
+            return res.status(201).json(orderData);
+         }
+         throw error;
+      }
+      res.status(201).json(data);
+    } catch (err: any) {
+      console.error("Error creating order:", err);
+      res.status(500).json({ error: err.message || "Failed to create order" });
+    }
+  });
+
+  app.get("/api/orders", authenticateAdmin, async (req, res) => {
+    try {
+      const db = getSupabase();
+      if (!db) {
+        return res.json(fallbackOrders);
+      }
+      const { data, error } = await (db as any).from("orders").select("*").order("created_at", { ascending: false });
+      if (error) {
+        if (error.code === 'PGRST205' || error.message?.includes('not find the table') || error.code === '42P01') {
+          return res.json(fallbackOrders);
+        }
+        throw error;
+      }
+      res.json(data);
+    } catch (err: any) {
+      console.error("Error fetching orders:", err);
+      res.json(fallbackOrders);
+    }
+  });
+
   // Shipping Rates
   app.get("/api/shipping-rates", (req, res) => {
     res.json(shippingRates);

@@ -10,10 +10,10 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState<string>('0');
 
   useEffect(() => {
-    if (products.length === 0) {
+    if (products.length === 0 && !isLoading) {
       fetchProducts();
     }
-  }, [products.length, fetchProducts]);
+  }, [products.length]);
 
   const product = products.find(p => String(p.id) === String(id));
 
@@ -36,8 +36,13 @@ export default function ProductPage() {
   }
 
   const handleQtyChange = (value: string) => {
+    // Prevent non-numeric characters from causing weird state issues
+    if (value === '') {
+      setQuantity('');
+      return;
+    }
     const cleanValue = value.replace(/^0+/, '');
-    setQuantity(cleanValue);
+    setQuantity(cleanValue || '0');
   };
 
   const getQty = () => {

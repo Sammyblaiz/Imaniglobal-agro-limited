@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 export default function Cart() {
   const navigate = useNavigate();
-  const { cart, removeFromCart, updateCartQuantity, shippingRates, fetchShippingRates, selectedCountryId, setCheckoutCountry, shippingType, setShippingType } = useStore();
+  const { cart, products, removeFromCart, updateCartQuantity, shippingRates, fetchShippingRates, selectedCountryId, setCheckoutCountry, shippingType, setShippingType } = useStore();
   const [countrySearch, setCountrySearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -60,7 +60,7 @@ export default function Cart() {
               <div key={item.id} className="flex flex-col sm:flex-row items-center gap-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
                 <div 
                   className="w-24 h-24 bg-gray-100 rounded bg-cover bg-center shrink-0"
-                  style={{ backgroundImage: `url('${item.image}')` }}
+                  style={{ backgroundImage: `url('${products.find(p => p.id === item.id)?.image || item.image || ''}')` }}
                 />
                 <div className="flex-1 text-center sm:text-left">
                   <h3 className="font-bold text-black uppercase text-sm mb-1">{item.name}</h3>

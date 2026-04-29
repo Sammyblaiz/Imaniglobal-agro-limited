@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore, getProductUnitDetails } from '../store';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function Checkout() {
     firstName: '', lastName: '', address: '', city: '', postalCode: ''
   });
   const [sameAsBilling, setSameAsBilling] = useState(true);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   if (cart.length === 0) {
     return (
@@ -34,49 +36,37 @@ export default function Checkout() {
   const shippingCost = (rawShippingCost / 20) * totalKg; 
   const total = (subtotal + shippingCost).toFixed(2);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Build WhatsApp Message
-    const orderDetails = cart.map(item => {
-      const unit = getProductUnitDetails(item.name);
-      const unitDesc = unit.type === 'bag' ? 'bag(s)' : 'kg';
-      return `${item.quantity} ${unitDesc} of ${item.name}`;
-    }).join(', ');
-    const displayCountry = activeRate?.country || 'Unknown';
-
-    const billInfoStr = `${billingInfo.firstName} ${billingInfo.lastName}, ${billingInfo.email}, ${billingInfo.phone}`;
-    const shipDest = sameAsBilling ? 'Same as billing' : `${shippingInfo.firstName} ${shippingInfo.lastName}, ${shippingInfo.address}, ${shippingInfo.city}`;
-
-    const message = `Hello IMANIGLOBAL! I would like to make a payment for my order of $${total}.
-    
-*Order Items:* ${orderDetails}
-*Destination Country:* ${displayCountry}
-*Shipping Method:* ${shippingType}
-
-*Billing Details:*
-${billInfoStr}
-
-*Shipping Destination:*
-${shipDest}
-
-Please provide me with the payment instructions!`;
-
-    const whatsappUrl = `https://wa.me/447379352882?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-
-    setTimeout(() => {
-      clearCart();
-      navigate('/');
-    }, 500);
-  };
-
   const handleBillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBillingInfo({...billingInfo, [e.target.name]: e.target.value});
+    validateForm({...billingInfo, [e.target.name]: e.target.value}, shippingInfo, sameAsBilling);
   };
 
   const handleShipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setShippingInfo({...shippingInfo, [e.target.name]: e.target.value});
+    validateForm(billingInfo, {...shippingInfo, [e.target.name]: e.target.value}, sameAsBilling);
+  };
+
+  const handleSameAsBillingChange = () => {
+    const newVal = !sameAsBilling;
+    setSameAsBilling(newVal);
+    validateForm(billingInfo, shippingInfo, newVal);
+  };
+
+  const validateForm = (billInfo: any, shipInfo: any, sameAs: boolean) => {
+    const billValid = Object.values(billInfo).every(val => (val as string).trim() !== '');
+    if (sameAs) {
+      setIsFormValid(billValid);
+    } else {
+      const shipValid = Object.values(shipInfo).every(val => (val as string).trim() !== '');
+      setIsFormValid(billValid && shipValid);
+    }
+  };
+
+  // Setup PayPal options
+  const initialOptions = {
+    clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test",
+    currency: "USD",
+    intent: "capture",
   };
 
   return (
@@ -88,7 +78,7 @@ Please provide me with the payment instructions!`;
           </Link>
           
           <h1 className="font-display text-4xl font-bold mb-8 text-black">Checkout</h1>
-          <form id="checkoutForm" onSubmit={handleSubmit} className="space-y-10">
+          <form id="checkoutForm" className="space-y-10" onSubmit={(e) => e.preventDefault()}>
             {/* Billing Details */}
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-bold mb-6 border-b pb-4">Billing Details</h2>
@@ -132,7 +122,7 @@ Please provide me with the payment instructions!`;
                   <input 
                     type="checkbox" 
                     checked={sameAsBilling} 
-                    onChange={() => setSameAsBilling(!sameAsBilling)}
+                    onChange={handleSameAsBillingChange}
                     className="w-4 h-4 text-primary"
                   />
                   Same as billing address
@@ -196,17 +186,75 @@ Please provide me with the payment instructions!`;
               <span className="font-bold text-lg text-primary">${total}</span>
             </div>
 
-            <button 
-              type="submit"
-              form="checkoutForm"
-              className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-full font-bold shadow-md hover:bg-green-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 uppercase tracking-wider"
-            >
-              <CheckCircle className="w-5 h-5" />
-              Complete Order on WhatsApp
-            </button>
-            <p className="text-xs text-text-muted text-center mt-4">
-              Your order details will be sent directly to our secure WhatsApp line for final processing.
-            </p>
+            <div className="mt-6">
+              {!isFormValid ? (
+                <div className="text-center p-4 bg-orange-50 border border-orange-200 text-orange-800 rounded-lg mb-4 text-sm font-semibold">
+                  Please fill in all required billing and shipping details to enable payment.
+                </div>
+              ) : (
+                <PayPalScriptProvider options={initialOptions}>
+                  <PayPalButtons 
+                    style={{ layout: "vertical", shape: "rect", color: "blue", label: "pay" }}
+                    createOrder={(data, actions) => {
+                      return actions.order.create({
+                        intent: "CAPTURE",
+                        purchase_units: [
+                          {
+                            amount: {
+                              currency_code: "USD",
+                              value: total,
+                            },
+                            description: "IMANIGLOBAL order",
+                          },
+                        ],
+                        application_context: {
+                          shipping_preference: "NO_SHIPPING" // we collect shipping independently
+                        }
+                      });
+                    }}
+                    onApprove={async (data, actions) => {
+                      if (!actions.order) return Promise.resolve();
+                      return actions.order.capture().then(async (details) => {
+                        const name = details.payer.name?.given_name || 'Customer';
+                        
+                        // Save the order to our backend
+                        try {
+                          await fetch('/api/orders', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                               paypal_order_id: details.id,
+                               customer_name: `${billingInfo.firstName} ${billingInfo.lastName}`,
+                               email: billingInfo.email,
+                               phone: billingInfo.phone,
+                               shipping_address: shippingInfo,
+                               billing_address: billingInfo,
+                               items: cart,
+                               subtotal,
+                               shipping_cost: shippingCost,
+                               total,
+                               status: details.status
+                            })
+                          });
+                        } catch (err) {
+                          console.error("Order save failed", err);
+                        }
+
+                        alert(`Transaction completed successfully by ${name}! Thank you for your purchase.`);
+                        clearCart();
+                        navigate('/');
+                      });
+                    }}
+                    onError={(err) => {
+                      console.error("PayPal Error:", err);
+                      // Fallback alert for the user if they cancel or it fails
+                      alert("There was an issue processing your payment. Please try again or use a different method.");
+                    }}
+                  />
+                </PayPalScriptProvider>
+              )}
+            </div>
+
           </div>
         </div>
       </div>

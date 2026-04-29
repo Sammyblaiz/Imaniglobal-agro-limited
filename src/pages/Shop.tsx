@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useStore, getProductUnitDetails } from '../store';
 import { ShoppingCart } from 'lucide-react';
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Shop() {
   const { products, fetchProducts, addToCart } = useStore();
   const [kgSelection, setKgSelection] = useState<Record<string, string>>({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
@@ -50,7 +51,17 @@ export default function Shop() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {products.map(product => (
-            <Link to={`/product/${product.id}`} key={product.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 block">
+            <div 
+              key={product.id} 
+              onClick={(e) => {
+                // Prevent navigation if an input or button (or child of button) was clicked
+                if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).closest('button')) {
+                  return;
+                }
+                navigate(`/product/${product.id}`);
+              }}
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 block cursor-pointer"
+            >
               <div 
                 className="w-full aspect-square bg-gray-100 bg-cover bg-center relative"
                 style={{ backgroundImage: `url('${product.image}')` }}
@@ -110,7 +121,7 @@ export default function Shop() {
                   </div>
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>
