@@ -161,22 +161,14 @@ export const useStore = create<AppState>()(
     try {
       const newProduct = { ...product, id: crypto.randomUUID() };
       
-      try {
-        const { error } = await supabase.from('products').insert([newProduct]);
-        if (error) {
-          console.error("Supabase insert error:", error);
-        }
-      } catch (err) {
-        // Ignore supabase insert failure
+      const { error } = await supabase.from('products').insert([newProduct]);
+      if (error) {
+        throw error;
       }
 
-      const cached = JSON.parse(localStorage.getItem('imaniglobal_products') || '[]');
-      const newProductNoImage = { ...newProduct };
-      delete newProductNoImage.image;
-      localStorage.setItem('imaniglobal_products', JSON.stringify([...cached, newProductNoImage]));
       await fetchProducts();
     } catch (error: any) {
-      console.error("Failed to add product to local storage, possible quota exceeded", error);
+      console.error("Failed to add product", error);
       alert("Error adding product. Image size might be too large.");
     }
   },
@@ -184,23 +176,14 @@ export const useStore = create<AppState>()(
   updateProduct: async (id, product) => {
     const { fetchProducts } = get();
     try {
-      try {
-        const { error } = await supabase.from('products').update(product).eq('id', id);
-        if (error) {
-          console.error("Supabase update error:", error);
-        }
-      } catch (err) {
-        // Ignore supabase update failure
+      const { error } = await supabase.from('products').update(product).eq('id', id);
+      if (error) {
+        throw error;
       }
 
-      const cached = JSON.parse(localStorage.getItem('imaniglobal_products') || '[]');
-      const productNoImage = { ...product };
-      delete productNoImage.image;
-      const updated = cached.map((p: any) => p.id === id ? { ...p, ...productNoImage } : p);
-      localStorage.setItem('imaniglobal_products', JSON.stringify(updated));
       await fetchProducts();
     } catch (error: any) {
-      console.error("Failed to update product in local storage, possible quota exceeded", error);
+      console.error("Failed to update product", error);
       alert("Error updating product. Image size might be too large.");
     }
   },
@@ -208,21 +191,14 @@ export const useStore = create<AppState>()(
   deleteProduct: async (id) => {
     const { fetchProducts } = get();
     try {
-      try {
-        const { error } = await supabase.from('products').delete().eq('id', id);
-        if (error) {
-          console.error("Supabase delete error:", error);
-        }
-      } catch (err) {
-        // Ignore supabase delete failure
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) {
+        throw error;
       }
 
-      const cached = JSON.parse(localStorage.getItem('imaniglobal_products') || '[]');
-      const filtered = cached.filter((p: any) => p.id !== id);
-      localStorage.setItem('imaniglobal_products', JSON.stringify(filtered));
       await fetchProducts();
     } catch (error: any) {
-      console.error("Failed to delete product from local storage", error);
+      console.error("Failed to delete product", error);
     }
   },
 

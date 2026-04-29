@@ -50,7 +50,7 @@ export default function Footer() {
           <h4 className="font-bold uppercase tracking-wider text-sm mb-4">Contact</h4>
           <ul className="space-y-2 text-sm text-gray-400">
             <li>Email: <a href="mailto:contact.imaniglobal@gmail.com" className="hover:text-primary transition-colors">contact.imaniglobal@gmail.com</a></li>
-            <li>Phone: <a href="https://wa.me/447379352882" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">+44 7379 352882</a></li>
+            <li>Phone: <a href="https://api.whatsapp.com/send?phone=447379352882" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">+44 7379 352882</a></li>
             <li>Address: 1 Bromfield Crescent Grampound Road Truro</li>
           </ul>
         </div>

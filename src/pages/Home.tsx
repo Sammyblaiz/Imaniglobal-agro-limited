@@ -66,7 +66,7 @@ export default function Home() {
             <Link to="/shop" className="px-8 py-4 bg-primary text-white font-semibold text-sm rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase">
               SHOP NOW
             </Link>
-            <a href="https://wa.me/447379352882" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-white text-black font-semibold text-sm rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase">
+            <a href="https://api.whatsapp.com/send?phone=447379352882" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-white text-black font-semibold text-sm rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 uppercase">
               BULK INQUIRY
             </a>
           </div>
