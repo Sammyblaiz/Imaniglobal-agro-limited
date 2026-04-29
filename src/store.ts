@@ -94,7 +94,8 @@ export const useStore = create<AppState>()(
             throw error;
           }
           if (data) {
-            set({ products: data, isLoading: false });
+            const filteredData = data.filter((p: any) => p.id !== "00000000-0000-0000-0000-000000000000");
+            set({ products: filteredData, isLoading: false });
           } else {
             set({ products: [], isLoading: false });
           }
@@ -105,6 +106,14 @@ export const useStore = create<AppState>()(
       },
 
   fetchShippingRates: async () => {
+    try {
+      const { data, error } = await supabase.from('products').select('description').eq('id', '00000000-0000-0000-0000-000000000000').single();
+      if (!error && data && data.description) {
+        set({ shippingRates: JSON.parse(data.description) });
+        return;
+      }
+    } catch (e) {}
+    
     const backup = localStorage.getItem('shippingRatesBackup');
     if (backup) {
       set({ shippingRates: JSON.parse(backup) });
@@ -205,6 +214,17 @@ export const useStore = create<AppState>()(
   updateShippingRates: async (rates) => {
     set({ shippingRates: rates });
     localStorage.setItem('shippingRatesBackup', JSON.stringify(rates));
+    try {
+      await supabase.from('products').upsert({
+        id: "00000000-0000-0000-0000-000000000000",
+        name: "_settings_shipping",
+        description: JSON.stringify(rates),
+        price: 0,
+        image: ""
+      });
+    } catch (e) {
+      console.error("Failed to persist to Supabase", e);
+    }
   }
 }),
 {

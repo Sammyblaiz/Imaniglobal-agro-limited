@@ -36,13 +36,24 @@ export default function Admin() {
 
   const handleAddCountryRate = () => {
     if (!newCountryName) return;
+
+    const existingIndex = editingRates.findIndex(r => r.country.toLowerCase() === newCountryName.toLowerCase());
+
     const newRate: CountryRate = {
-      id: Date.now().toString(),
-      country: newCountryName,
+      id: existingIndex >= 0 ? editingRates[existingIndex].id : Date.now().toString(),
+      country: existingIndex >= 0 ? editingRates[existingIndex].country : newCountryName,
       cargo: newCargoRate,
       shipping: newShippingRate
     };
-    setEditingRates([...editingRates, newRate]);
+
+    if (existingIndex >= 0) {
+      const updatedRates = [...editingRates];
+      updatedRates[existingIndex] = newRate;
+      setEditingRates(updatedRates);
+    } else {
+      setEditingRates([...editingRates, newRate]);
+    }
+    
     setNewCountryName('');
     setNewCargoRate(0);
     setNewShippingRate(0);

@@ -50,8 +50,8 @@ let fallbackProducts = [
 
 function getSupabase() {
   if (!supabase) {
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://dczoxzxxnsfxwzjfuhzq.supabase.co";
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjem94enh4bnNmeHd6amZ1aHpxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjQzMDUyNywiZXhwIjoyMDkyMDA2NTI3fQ.uYFLeAszyDB8MkGV6J4_L4T7ubv8mQSyRBjZbTMInaM";
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://jajcgwmwepwtkielavey.supabase.co";
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphamNnd213ZXB3dGtpZWxhdmV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODY4MDEsImV4cCI6MjA5MTg2MjgwMX0.XdwdLB38zT85sjK2wRSjIJHS8EuxcLDwybYWorXdNiY";
     
     if (!supabaseKey) {
       return null;
@@ -145,13 +145,52 @@ async function startServer() {
   });
 
   // Shipping Rates
-  app.get("/api/shipping-rates", (req, res) => {
-    res.json(shippingRates);
+  app.get("/api/shipping-rates", async (req, res) => {
+    try {
+      const db = getSupabase();
+      if (!db) {
+        return res.json(shippingRates);
+      }
+      const { data, error } = await (db as any).from("products").select("description").eq("id", "00000000-0000-0000-0000-000000000000").single();
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return res.json(shippingRates);
+        }
+        if (error.code === 'PGRST205' || error.message?.includes('not find the table') || error.code === '42P01') {
+          return res.json(shippingRates);
+        }
+        throw error;
+      }
+      if (data && data.description) {
+        shippingRates = JSON.parse(data.description);
+      }
+      res.json(shippingRates);
+    } catch(err) {
+      console.warn("Shipping rates DB fetch failed, using memory:", err);
+      res.json(shippingRates);
+    }
   });
 
-  app.put("/api/shipping-rates", authenticateAdmin, (req, res) => {
+  app.put("/api/shipping-rates", authenticateAdmin, async (req, res) => {
     if (Array.isArray(req.body)) {
       shippingRates = req.body;
+      try {
+        const db = getSupabase();
+        if (db) {
+           const { error } = await (db as any).from("products").upsert({
+              id: "00000000-0000-0000-0000-000000000000",
+              name: "_settings_shipping",
+              description: JSON.stringify(shippingRates),
+              price: 0,
+              image: ""
+           });
+           if (error) {
+             console.warn("Upsert shipping rates failed", error);
+           }
+        }
+      } catch (err) {
+        console.error("Failed to store shipping rates in DB", err);
+      }
     }
     res.json(shippingRates);
   });
@@ -183,7 +222,8 @@ async function startServer() {
         console.error("Supabase GET error:", error);
         throw error;
       }
-      res.json(data);
+      const filteredData = data.filter((p: any) => p.id !== "00000000-0000-0000-0000-000000000000");
+      res.json(filteredData);
     } catch (error: any) {
       console.error("Error fetching products:", error);
       console.warn("Falling back to local products due to an error.");
