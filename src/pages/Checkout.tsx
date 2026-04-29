@@ -227,7 +227,7 @@ export default function Checkout() {
                                customer_name: `${billingInfo.firstName} ${billingInfo.lastName}`,
                                email: billingInfo.email,
                                phone: billingInfo.phone,
-                               shipping_address: shippingInfo,
+                               shipping_address: sameAsBilling ? billingInfo : shippingInfo,
                                billing_address: billingInfo,
                                items: cart,
                                subtotal,
@@ -240,9 +240,16 @@ export default function Checkout() {
                           console.error("Order save failed", err);
                         }
 
-                        alert(`Transaction completed successfully by ${name}! Thank you for your purchase.`);
+                        // Generate WhatsApp message
+                        const orderDetails = cart.map(item => `${item.name} x ${item.quantity} ${getProductUnitDetails(item.name).type}`).join(', ');
+                        const whatsappMessage = `Hello IMANIGLOBAL, I have just completed a payment on your website!\n\nOrder ID: ${details.id}\nName: ${billingInfo.firstName} ${billingInfo.lastName}\nItems: ${orderDetails}\nTotal paid: $${total}\n\nPlease confirm my order.`;
+                        const encodedMessage = encodeURIComponent(whatsappMessage);
+
+                        alert(`Transaction completed successfully by ${name}! Thank you for your purchase. We will direct you to WhatsApp to confirm your order details.`);
                         clearCart();
-                        navigate('/');
+                        
+                        // Redirect to WhatsApp
+                        window.location.href = `https://api.whatsapp.com/send?phone=447379352882&text=${encodedMessage}`;
                       });
                     }}
                     onError={(err) => {
